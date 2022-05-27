@@ -20,9 +20,4 @@ class Settings(BaseSettings):
         env_file_encoding = "utf-8"
 
 
-EMAIL_FROM = os.getenv('EMAIL_HOST_USER', 'pre-listing@cryptobot.page')
-EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.office365.com')
-EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', 'gdshxhzfwqcnvdsz')
-EMAIL_PORT = 587
-
 
