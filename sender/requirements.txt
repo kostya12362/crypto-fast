@@ -1,0 +1,7 @@
+celery==5.2.7
+fastapi==0.78.0
+uvicorn==0.16.0
+fastapi_utils==0.2.1
+redis
+twilio
+pydantic[dotenv]

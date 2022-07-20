@@ -38,7 +38,7 @@ class MicroAsyncClient(ABC):
             self._reported[task_name] = ActiveTasks(
                 func=func, callback=callback, queues=queues, args=args, kwargs=kwargs
             )
-
+            print(self._reported)
             @wraps(func)
             async def wrapper(*args, **kwargs):
                 await func(*args, **kwargs)
@@ -56,11 +56,10 @@ class MicroAsyncClient(ABC):
         await self._con.listen(queue_name=self.service_name, callback=self.on_message)
 
     async def send(self, message: Message,  priority: int = None):
-
-        print(message.body, message.headers)
+        print(message.body.json().encode(), message.headers.dict())
         return await self._con.publish(
             msg=message.body.json().encode(),
-            headers=json.dumps(message.headers).encode(),
+            headers=message.headers.dict(),
             priority=priority,
             queue_name=message.headers.send_queue
         )
@@ -69,17 +68,19 @@ class MicroAsyncClient(ABC):
 
         async with message.process():
             decoded_message = message.body.decode()
-            try:
-
-                data = json.loads(decoded_message)
-                _func = self._reported.get(data['call_task'])['func']
-                if _func:
-                    args = data['body']['args']
-                    kwargs = data['body']['kwargs']
-                    result = await _func.__call__(self=self, *args, **kwargs)
-                    self.logger.info(f"[x] Received message {decoded_message}")
-            except Exception as e:
-                self.logger.error(f'{decoded_message} message {e}')
+            # try:
+            print(decoded_message, message.headers)
+            mess = Message(headers=message.headers, body=decoded_message)
+            print(mess.dict())
+            # data = json.loads(decoded_message)
+            # _func = self._reported.get(message.headers.get('c'))['func']
+            # if _func:
+            #     args = data['body']['args']
+            #     kwargs = data['body']['kwargs']
+            #     result = await _func.__call__(self=self, *args, **kwargs)
+            #     self.logger.info(f"[x] Received message {decoded_message}")
+            # except Exception as e:
+            #     self.logger.error(f'{decoded_message} message {e}')
 
     def _check_unique_tasks(self, _task_name: str):
         if _task_name in set(self._reported.keys()):

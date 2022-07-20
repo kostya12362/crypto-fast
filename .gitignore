@@ -2,3 +2,12 @@ logs
 .env
 venv
 env
+migrations
+
+cert.pem
+key.pem
+test
+auth/test.py
+
+__pycache__
+.DS_Store

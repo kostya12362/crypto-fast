@@ -1,12 +1,5 @@
-import os
-import re
-from core.RMQ.client import MicroAsyncClient
 from pydantic import BaseSettings
-
-
-BASE_DIR = os.path.dirname(os.path.dirname(__file__))
-service_name = '.'.join(re.sub(r'{_x}|\/|.py'.format(_x=BASE_DIR), ' ', os.path.abspath(__file__)).split())
-rb = MicroAsyncClient(prefetch_count=1, service_name=service_name)
+from twilio.rest import Client
 
 
 class Settings(BaseSettings):
@@ -14,10 +7,28 @@ class Settings(BaseSettings):
     EMAIL_HOST: str
     EMAIL_HOST_PASSWORD: str
     EMAIL_PORT: int = 587
+    EMAIL_TITLE: str
+
+    TWILIO_ACCOUNT_SID: str
+    TWILIO_AUTH_TOKEN: str
+    FROM_MOBILE: str
+
+    REDIS_DB: str
+    REDIS_HOST: str
+    REDIS_PORT: str
+    REDIS_PASSWORD: str
 
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
 
+    @property
+    def get_broker(self) -> str:
+        return f'redis://:{self.REDIS_PASSWORD}@{self.REDIS_HOST}:{self.REDIS_PORT}/{self.REDIS_DB}'
+
+    @property
+    def get_twilio_client(self) -> Client:
+        return Client(self.TWILIO_ACCOUNT_SID, self.TWILIO_AUTH_TOKEN)
 
 
+config = Settings()

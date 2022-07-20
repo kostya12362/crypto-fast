@@ -1,27 +1,79 @@
 version: "3.8"
 services:
-    rabbitmq3:
-        container_name: "rabbitmq"
-        image: rabbitmq:3.8-management-alpine
-        environment:
-            - RABBITMQ_DEFAULT_USER=myuser
-            - RABBITMQ_DEFAULT_PASS=mypassword
-        ports:
-            # AMQP protocol port
-            - '5672:5672'
-            # HTTP management UI
-            - '15672:15672'
 
     db:
-        image: postgres:10.4-alpine
-        hostname: postgres
-        restart: always
+        image: postgres:12.0-alpine
+        container_name: "db"
         volumes:
-            - postgres_data:/var/lib/postgresql/data/
-        ports:
-            - "127.0.0.1:5432:5432"
+            - ./postgres_data:/var/lib/postgresql/data/
         env_file:
             - .env
+        ports:
+            - "5433:5432"
+
+    sender:
+        container_name: "sender"
+        build:
+            context: ./sender
+            dockerfile: ./api.Dockerfile
+        env_file:
+            - ./sender/.env
+        ports:
+            - "5005:5005"
+        expose:
+            - 5005
+
+    celery-worker:
+        container_name: "celery-worker"
+        build:
+            context: ./sender
+            dockerfile: ./worker.Dockerfile
+        env_file:
+            - ./sender/.env
+
+
+
+#    auth:
+#        container_name: "auth"
+#        restart: always
+#        build:
+#            context: ./auth
+#            dockerfile: ./api.Dockerfile
+#        env_file:
+#             - ./auth/.env
+#        ports:
+#            - "5004:5004"
+#        expose:
+#            - 5004
+#        depends_on:
+#            - db
+#            - redis
+
+    nginx:
+        container_name: "nginx"
+        restart: always
+        build:
+            context: ./nginx
+            dockerfile: ./nginx.Dockerfile
+        ports:
+            - 80:80
+
+    redis:
+        image: 'redis:alpine'
+        command: "redis-server --requirepass jjsja7123jdasdkk21238882jjejq --appendonly yes"
+        restart: always
+        expose:
+            - 6379
+        ports:
+            - "6377:6379"
+        hostname: redis
+        env_file:
+            - ./sender/.env
+        volumes:
+            - redis_data:/sender/redis/data
+#        depends_on:
+#            - sender
 
 volumes:
-  postgres_data:
+    postgres_data:
+    redis_data:

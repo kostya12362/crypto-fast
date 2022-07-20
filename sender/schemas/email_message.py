@@ -1,12 +1,18 @@
 import re
-from typing import List, Literal
-
+from typing import List
 from pydantic import BaseModel, validator
-from fastapi import HTTPException
+
+from messages import errors
 
 
 class EmailMessage(BaseModel):
-    from_email: str
-    to_email: List[str]
+    to_emails: List[str]
     body: str
-    type_message: Literal['registration']
+    subject: str
+
+    @validator('to_emails')
+    def to_emails_check(cls, to_emails) -> list:
+        _to_emails = [i for i in to_emails if re.match(r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)", i)]
+        if not _to_emails:
+            raise errors.not_valid_to_emails
+        return _to_emails

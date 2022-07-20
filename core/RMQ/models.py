@@ -8,7 +8,7 @@ class HeaderRMQ(BaseModel):
 
 
 class BodyMessageRMQ(BaseModel):
-    args: Optional[tuple]
+    args: Optional[list]
     kwargs: Optional[dict]
 
 
