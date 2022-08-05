@@ -61,7 +61,7 @@ class SessionTokenVerifier(SessionVerifier[UUID, SessionData]):
 
     @property
     def _free_path_check(self):
-        if self.request.url.path not in self._free_paths_list:
+        if self.request.url.path not in '|'.join(self._free_paths_list):
             return False
         return True
 
@@ -82,6 +82,6 @@ class SessionTokenVerifier(SessionVerifier[UUID, SessionData]):
         return self._auth_http_exception
 
     def verify_session(self, model: SessionData) -> bool:
-        if not model.user_id and self._free_path_check:
+        if self._free_path_check:
             return False
         return True

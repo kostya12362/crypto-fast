@@ -1,4 +1,3 @@
-import re
 from typing import (
     Optional,
     List,
@@ -12,37 +11,31 @@ from pydantic import (
 )
 
 
+class OperationSecret(BaseModel):
+    operation_id: int
+    operation_key: Optional[str] = None
+
+
 class SecurityControl(BaseModel):
-    email_active: Optional[List[int]] = list()
-    otp_active: Optional[List[int]] = list()
-    phone_active: Optional[List[int]] = list()
+    email_active: Union[Optional[List[int]], Optional[bool]] = list()
+    otp_active: Union[Optional[List[int]], Optional[bool]] = list()
+    phone_active: Union[Optional[List[int]], Optional[bool]] = list()
 
 
 class UserDetailSchema(SecurityControl):
     id: int
-    general_email: str
+    general_email: Optional[str] = None
     phone: Optional[str]
     date_joined: Optional[datetime]
     is_verified: bool
     anti_phishing: bool
     provider: str
 
-    @validator('general_email', pre=True)
-    def format_email(cls, general_email) -> str:
-        first, _ = general_email.split('@')
-        if len(first) > 2:
-            return "@".join([first.replace(first[2:], len(first[2:]) * "*"), _])
-        return "@".join([first.replace(first, len(first) * "*"), _])
-
-    @validator('phone', pre=True)
-    def format_phone(cls, phone) -> str:
-        if phone:
-            return phone.replace(phone[4:-2], len(phone[4:-2]) * "*")
-
 
 class UserAuthenticateSchema(BaseModel):
-    user: UserDetailSchema
-    token: Optional[str] = None
+    user:  UserDetailSchema
+    # token: Optional[UUID] = None
+    # operation: Optional[OperationSecret] = None
 
 
 class OpenID(BaseModel):  # pylint: disable=no-member

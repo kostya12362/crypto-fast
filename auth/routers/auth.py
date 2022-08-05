@@ -4,24 +4,18 @@ from fastapi_utils.inferring_router import InferringRouter
 from fastapi_utils.cbv import cbv
 from schemas import (
     UserCreate,
-    # UserLoginSchema,
-    # BaseAuthSchemas,
     FullSession,
-    # UserLogin,
     SessionData,
-    OperationSchema,
     UserAuthenticateSchema,
-
+    UserDetailSchema,
     EmailAuth,
+    SameOperationEnum,
     FacebookSocialAuth,
     GoogleSocialAuth,
     TelegramSocialAuth,
 )
 
-
-# from resources.auth.manager import security_module
-from resources import utils
-from resources import auth
+from resources import utils, auth, auth_session
 
 router = InferringRouter()
 
@@ -34,40 +28,71 @@ class AuthAPIView:
         response = await auth.email_user_create(data=data, session=session)
         return response
 
-    @router.get(path='/email-verify', tags=["auth-email"])
+    @router.get(
+        path='/email-verify',
+        tags=["auth-email"]
+    )
     async def email_verify(self, token: str):
         response = await auth.email_user_verify(token=token)
         return response
 
-
     @router.post(
         path='/login/email',
-        # response_model=Union[UserAuthenticateSchema, OperationSchema],
+        response_model=Union[UserAuthenticateSchema],
         response_model_exclude_unset=True,
         tags=["auth-email"]
     )
+    @auth_session.save
     async def login_user(self, data: EmailAuth, session: FullSession = Depends(utils.verifier_cookie)):
         user = await auth.email_user_login(data=data)
-        # val = await generate_TOTP(session_uuid=session[1], operation_id=1)
-        # return val if val else user
+        return UserAuthenticateSchema(user=user)
+
+    @router.post(
+        path='/login/google',
+        response_model=Union[UserAuthenticateSchema],
+        response_model_exclude_unset=True,
+        tags=['auth-SSO']
+    )
+    @auth_session.save
+    async def login_google(self, data: GoogleSocialAuth):
+        response_sso = await utils.google_sso(**data.dict())
+        user = await auth.social_user_login_or_create(response_sso)
         return user
 
-    @router.post(path='/login/google', tags=['auth-SSO'])
-    async def login_google(self, data: GoogleSocialAuth, session: SessionData = Depends(utils.verifier_cookie)):
-        val = await utils.google_sso(**data.dict())
-        # login_or_create_user
-        return val
-
-    @router.post(path='/login/facebook', tags=['auth-SSO'])
+    @router.post(
+        path='/login/facebook',
+        response_model=Union[UserAuthenticateSchema],
+        response_model_exclude_unset=True,
+        tags=['auth-SSO']
+    )
+    @auth_session.save
     async def login_facebook(self, data: FacebookSocialAuth, session: FullSession = Depends(utils.verifier_cookie)):
-        val = await utils.facebook_sso(**data.dict())
-        user = await auth.social_user_login_or_create(val)
-        return user
+        response_sso = await utils.facebook_sso(**data.dict())
+        user = await auth.social_user_login_or_create(response_sso)
+        return UserAuthenticateSchema(user=user)
 
-    @router.post(path="/login/telegram", tags=['auth-SSO'])
+    @router.post(
+        path="/login/telegram",
+        response_model=Union[UserAuthenticateSchema],
+        response_model_exclude_unset=True,
+        tags=['auth-SSO'],
+    )
+    @auth_session.save
     async def login_telegram(self, data: TelegramSocialAuth, session: FullSession = Depends(utils.verifier_cookie)):
-        val = await utils.telegram_sso(**data.dict())
-        # login_or_create_user
+        response_sso = await utils.telegram_sso(**data.dict())
+        user = await auth.social_user_login_or_create(response_sso)
+        return UserAuthenticateSchema(user=user)
 
-        return val
+    @router.get(
+        path="/logout",
+        tags=['auth'],
+    )
+    async def logout(self, session: FullSession = Depends(utils.verifier_cookie)):
+        await utils.backend_memory.delete(session_id=session.session_id)
+        return {"status": True}
 
+    @router.get(
+        path="/test",
+    )
+    async def test(self, session: FullSession = Depends(utils.verifier_cookie)):
+        return session

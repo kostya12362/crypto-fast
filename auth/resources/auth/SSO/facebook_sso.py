@@ -32,5 +32,5 @@ class FacebookSSO(BaseSSO):
 
     @staticmethod
     def data_check(**kwargs):
-        if kwargs.get('token') and not kwargs.get('error_subcode'):
+        if kwargs.get('token') and not kwargs.get('error'):
             return True

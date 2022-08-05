@@ -9,10 +9,10 @@ from typing import (
     Dict,
     NamedTuple,
 )
-from enum import Enum
 from pydantic import (
     BaseModel,
 )
+from schemas.security import ActiveTOTP
 from schemas.auth.auth_response import SecurityControl
 
 
@@ -29,39 +29,21 @@ class GeoLocation(BaseModel):
     long: Optional[float]
 
 
-class SameOperationEnum(Enum):
-    login = 1
-    swap = 2
-    bridge = 3
-    change = 4
-    security = 5
-    settings = 6
-    nft = 7
-    send = 8
-
-
-class ActiveTOTP(Dict):
-
-    def __contains__(self, key):
-        valid_key = [i.value for i in SameOperationEnum]
-        return [key in (list(self.keys()) + valid_key)]
-
-    def __getitem__(self, key):
-        if self.__contains__(key):
-            return self.___getitem__(self, key)
-        else:
-            keys = ','.join([f'{i.value}| {i.name}' for i in SameOperationEnum])
-            raise KeyError(f'{key} using only {keys}')
-
-    @staticmethod
-    def ___getitem__(idict, key):
-        if Dict.__contains__(idict, key):
-            return Dict.__getitem__(idict, key)
+# class SameOperationEnum(Enum):
+#     login = 1
+#     swap = 2
+#     bridge = 3
+#     change = 4
+#     security = 5
+#     settings = 6
+#     nft = 7
+#     send = 8
 
 
 class OperationDetail(BaseModel):
     active: bool = False
     timestamp: Optional[float] = datetime.now(tz=timezone.utc).timestamp()
+    secret: Optional[str] = None
 
 
 class OperationCheck(BaseModel):
@@ -80,9 +62,12 @@ class SessionData(SecurityControl):
     device: Device
     location: GeoLocation
     ip_address: str
+    ge: str = None
+    general_email: str = None
+    phone: str = None
     user_id: Optional[int] = None
     live_token: Optional[UUID] = None
-    operation_with_totp: Optional[ActiveTOTP[int, Dict[str, OperationCheck]]]
+    operations: Optional[dict] = None
 
 
 class FullSession(NamedTuple):

@@ -1,10 +1,25 @@
 import json
-
+from enum import Enum
 from fastapi import HTTPException
 from typing import (
     Dict, List, Union
 )
 from json import loads, JSONDecodeError
+
+
+class SameOperationEnum(Enum):
+    login = 1
+    swap = 2
+    bridge = 3
+    change = 4
+    security = 5
+    settings = 6
+    nft = 7
+    send = 8
+
+    @classmethod
+    def list(cls):
+        return list(map(lambda c: c.value, cls))
 
 
 class ExtractDB:

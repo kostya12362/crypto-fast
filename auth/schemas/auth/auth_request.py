@@ -35,7 +35,6 @@ class EmailAuth(BaseModel):
 
     @validator('password')
     def password_validate(cls, password, values):
-        print(password, values['email'])
         if not any((password, values['email'])):
             raise errors.email_provider
         return password

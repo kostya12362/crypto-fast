@@ -37,7 +37,7 @@ class UtilsServices:
 
     ENDPOINTS = {
         'send-email': URLPath(path='http://localhost:5005/send/email-message', method='POST'),
-        'send-phone': URLPath(path='http://localhost:5005/send/phone-message', method='POST'),
+        'send-sms': URLPath(path='http://localhost:5005/send/phone-message', method='POST'),
         'ip-detail': URLPath(path='http://www.geoplugin.net/json.gp?ip={ip_address}', method='GET')
     }
 
@@ -54,7 +54,6 @@ class UtilsServices:
                     response = await client.post(url=self.ENDPOINTS[endpoint].path, json=data)
                 elif _e.method == 'GET':
                     response = await client.get(url=self.ENDPOINTS[endpoint].path.format(**parameters))
-        print(response.text)
         return json.loads(response.text)
 
     @property

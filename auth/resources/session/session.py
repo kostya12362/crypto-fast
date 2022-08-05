@@ -15,7 +15,7 @@ from fastapi import (
 
 from user_agents import parse
 
-from resources.utils_services import utils
+from resources.utils import utils
 from schemas import SessionData, Device, GeoLocation
 
 
