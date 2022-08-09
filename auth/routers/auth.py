@@ -5,7 +5,7 @@ from fastapi_utils.cbv import cbv
 from schemas import (
     UserCreate,
     FullSession,
-    UserAuthenticateSchema,
+    UserDetailSchema,
     EmailAuth,
     FacebookSocialAuth,
     GoogleSocialAuth,
@@ -25,25 +25,25 @@ class AuthAPIView:
         response = await auth.email_user_create(data=data, session=session)
         return response
 
-    @router.get(path='/email-verify', tags=["auth-email"])
+    @router.get(path='/email-verify', tags=["auth-email"], response_model=UserDetailSchema)
     async def email_verify(self, token: str):
         user = await auth.email_user_verify(token=token)
-        return UserAuthenticateSchema(user=user)
+        return user
 
     @router.post(
         path='/login/email',
-        response_model=Union[UserAuthenticateSchema],
+        response_model=Union[UserDetailSchema],
         response_model_exclude_unset=True,
         tags=["auth-email"]
     )
     @auth_session.save
     async def login_user(self, data: EmailAuth, session: FullSession = Depends(utils.verifier_cookie)):
         user = await auth.email_user_login(data=data)
-        return UserAuthenticateSchema(user=user)
+        return user
 
     @router.post(
         path='/login/google',
-        response_model=Union[UserAuthenticateSchema],
+        response_model=Union[UserDetailSchema],
         response_model_exclude_unset=True,
         tags=['auth-SSO']
     )
@@ -55,7 +55,7 @@ class AuthAPIView:
 
     @router.post(
         path='/login/facebook',
-        response_model=Union[UserAuthenticateSchema],
+        response_model=Union[UserDetailSchema],
         response_model_exclude_unset=True,
         tags=['auth-SSO']
     )
@@ -63,11 +63,11 @@ class AuthAPIView:
     async def login_facebook(self, data: FacebookSocialAuth, session: FullSession = Depends(utils.verifier_cookie)):
         response_sso = await utils.facebook_sso(**data.dict())
         user = await auth.social_user_login_or_create(response_sso)
-        return UserAuthenticateSchema(user=user)
+        return user
 
     @router.post(
         path="/login/telegram",
-        response_model=Union[UserAuthenticateSchema],
+        response_model=Union[UserDetailSchema],
         response_model_exclude_unset=True,
         tags=['auth-SSO'],
     )
@@ -75,7 +75,7 @@ class AuthAPIView:
     async def login_telegram(self, data: TelegramSocialAuth, session: FullSession = Depends(utils.verifier_cookie)):
         response_sso = await utils.telegram_sso(**data.dict())
         user = await auth.social_user_login_or_create(response_sso)
-        return UserAuthenticateSchema(user=user)
+        return user
 
     @router.get(path="/logout", tags=['auth'])
     async def logout(self, response: Response, session: FullSession = Depends(utils.verifier_cookie)):

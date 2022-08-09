@@ -31,10 +31,6 @@ class UserDetailSchema(SecurityControl):
     provider: str = 'email'
 
 
-class UserAuthenticateSchema(BaseModel):
-    user:  UserDetailSchema
-
-
 class OpenID(BaseModel):
     provider: Optional[str]
     id: Union[str, int] = None

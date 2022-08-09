@@ -117,3 +117,24 @@ class Exceptions:
             status_code=400,
             detail='User already registered',
         )
+
+    @property
+    def history_login(self):
+        return HTTPException(
+            status_code=400,
+            detail="User already login"
+        )
+
+    @property
+    def operation_detail(self):
+        return HTTPException(
+            status_code=400,
+            detail="Not detect operation"
+        )
+
+    @property
+    def not_valid_code(self):
+        return HTTPException(
+            status_code=400,
+            detail='Not valid code'
+        )

@@ -25,6 +25,7 @@ from schemas import (
 
 from resources import utils, generateOTP
 
+from messages import errors
 from models.history_login import HistoryLogin
 from models.security import Security
 
@@ -38,11 +39,13 @@ class SecurityAPIView:
     async def history_login(self, session: FullSession = Depends(utils.verifier_cookie)) -> List:
         result = await HistoryLogin.select_history_login(session.data.user_id)
         _result = list()
+        print(result)
         for item in result:
-            _hl = HistoryLoginSchema(**item)
-            if await utils.backend_memory.read(_hl.detail[0].session_id):
-                _hl.detail[0].active = True
-            _result.append(_hl)
+            print(item)
+            # _hl = HistoryLoginSchema(**item)
+            # if await utils.backend_memory.read(_hl.detail[0].session_id):
+            #     _hl.detail[0].active = True
+            # _result.append(_hl)
         return _result
 
     @router.get('/add-otp', tags=['OTP'])
@@ -55,7 +58,9 @@ class SecurityAPIView:
         val = await Security.create_otp_secret(user_id=session.data.user_id, url_secret=url_secret)
         return val, url_secret
 
-    @router.get("/operation", tags=['check-operation'])
+    @router.get(
+        path="/operation",
+        tags=['check-operation'])
     async def check_operation(
             self,
             operation_id: int,
@@ -74,33 +79,26 @@ class SecurityAPIView:
                     str(operation_id): {operation_key: operation_check}
                 }
                 await utils.backend_memory.update(session_id=session.session_id, data=session.data)
-            detail = session.data.operations.get(str(operation_id), dict()).get(operation_key)
+            try:
+                detail = OperationCheck(**session.data.operations[str(operation_id)][operation_key])
+            except KeyError:
+                detail = None
             if detail:
                 response = OperationSchema(**{
                     'status': self.validate_status(detail=detail),
                     'operation_id': operation_id,
                     'operation_key': operation_key,
-                    'detail': self.replace_key(detail=detail)
+                    'detail': detail.dict(exclude={'email': {'secret'}, 'otp': {'secret'}, 'sms': {'secret'}})
                 })
                 if response.status == 'active' and operation_id == 1:
                     return {"Authorization": f"Token {session.data.live_token}"}
                 return response
-            else:
-                return "Not valid operation_key"
-        return "Error"
+
+        raise errors.operation_detail
 
     @staticmethod
-    def replace_key(detail: dict):
-        data = dict()
-        for k, v in detail.items():
-            if v:
-                _ = v.pop('secret', v)
-                data[k] = v
-        return data
-
-    @staticmethod
-    def validate_status(detail: dict):
-        if all([v.get('active', True) for k, v in detail.items() if v]):
+    def validate_status(detail: OperationCheck):
+        if all([v.get('active', True) for k, v in detail.dict().items() if v]):
             return 'active'
         else:
             return 'info'

@@ -13,6 +13,7 @@ from schemas import (
 )
 from resources.render import render_template
 from resources.utils import utils
+from messages import errors
 
 
 class GenerateOTP:
@@ -79,6 +80,7 @@ class GenerateOTP:
         operation = self.get_operation
         operation.secret = secret
         code = totp.now()
+        print(code)
         if self._type == 'email':
             body = {
                 "to_emails": [self._session.data.general_email],
@@ -95,13 +97,14 @@ class GenerateOTP:
         return operation
 
     def check_code(self, totp: pyotp.TOTP):
-        if all((self._code, totp.now() == self._code)):
-            operation = self.get_operation
-            if operation:
-                operation.active = True
-                return operation
-        else:
-            raise HTTPException(detail='Not valid code', status_code=400)
+        try:
+            if all((self._code, totp.now() == self._code)):
+                operation = self.get_operation
+                if operation:
+                    operation.active = True
+                    return operation
+        except TypeError:
+            raise errors.not_valid_code
 
 
 generateOTP = GenerateOTP()
