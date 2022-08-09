@@ -22,13 +22,21 @@ class Security(Model):
         table = "security"
 
     @classmethod
-    async def create_otp_secret(cls, user_id: int, secret: str) -> dict:
+    async def create_otp_secret(cls, user_id: int, url_secret: str) -> dict:
         async with transactions.in_transaction("default") as conn:
             val = await conn.execute_query_dict(f'''
                 UPDATE security
                 SET otp_secret = $2
                 WHERE user_id= $1
                 RETURNING security.otp_secret;
-            ''', (user_id, secret))
-            print(val)
+            ''', (user_id, url_secret))
+            return extractDB(val)
+
+    @classmethod
+    async def get_otp_secret(cls, user_id: int) -> dict:
+        async with transactions.in_transaction("default") as conn:
+            val = await conn.execute_query_dict(f'''
+                SELECT otp_secret FROM security
+                WHERE user_id= $1;
+            ''', (user_id,))
             return extractDB(val)

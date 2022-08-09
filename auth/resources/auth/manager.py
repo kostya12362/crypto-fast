@@ -1,6 +1,3 @@
-from uuid import uuid4
-from typing import Union
-
 from passlib.context import CryptContext
 
 from schemas import (
@@ -43,20 +40,13 @@ class BaseAuth(Security):
             user_auth={"email": data.email, "password_hash": self.get_password_hash(data.password)}
         )
         token = token_manager.crypto_encode(user['id'])
+        content = {
+            **{"redirect_url": data.redirect_url, "token": token_manager.crypto_encode(user['id'])},
+            **session.data.dict()
+        }
         body = {
-            "to_emails": [
-                data.email,
-            ],
-            "body": render_template(
-                base_html='registration.html',
-                **{
-                    **{
-                        "redirect_url": data.redirect_url,
-                        "token": token_manager.crypto_encode(user['id']),
-                    },
-                    **session.data.dict()
-                }
-            ),
+            "to_emails": [data.email],
+            "body": render_template(base_html='registration.html', **content),
             "subject": "Registration on an AbsoluteWallet",
         }
         print(f'{data.redirect_url}?token={token}')
@@ -64,7 +54,7 @@ class BaseAuth(Security):
         return response
 
     @staticmethod
-    async def email_user_verify(token: str) -> dict:
+    async def email_user_verify(token: str) -> UserDetailSchema:
         try:
             user_id = token_manager.crypto_decode(token)
         except Exception as e:
@@ -73,7 +63,7 @@ class BaseAuth(Security):
             raise errors.token_email_not_valid
         if user_id:
             val = await User.verified_update(user_id=user_id)
-            return val
+            return UserDetailSchema(**val)
         raise errors.token_email_not_valid
 
     async def email_user_login(self, data: EmailAuth) -> UserDetailSchema:

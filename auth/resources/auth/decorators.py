@@ -1,4 +1,7 @@
 import functools
+from uuid import (
+    uuid4,
+)
 from schemas import (
     FullSession,
     UserAuthenticateSchema,
@@ -28,9 +31,7 @@ class SaveDataAuth:
             if isinstance(response, UserAuthenticateSchema):
                 session: FullSession = kwargs['session']
                 await HistoryLogin.insert_history_login(data=session.data, session=session.session_id)
-                # response.token = uuid4()
-                # session.data.live_token = response.token
-
+                session.data.live_token = str(uuid4())
                 session.data.user_id = response.user.id
                 session.data.general_email = response.user.general_email
                 session.data.phone = response.user.phone
@@ -40,9 +41,6 @@ class SaveDataAuth:
 
                 response.user.general_email = format_email(response.user.general_email)
                 response.user.phone = format_phone(response.user.phone)
-
-
-                # session.data.operations = cls._get_active_security_operation(session.data)
                 await utils.backend_memory.update(data=session.data, session_id=session.session_id, _time=False)
                 return response
         return wrap_func

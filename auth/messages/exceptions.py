@@ -110,3 +110,10 @@ class Exceptions:
             status_code=400,
             detail='If you are using a provider email you need to use the fields, email and password'
         )
+
+    @property
+    def user_already(self):
+        return HTTPException(
+            status_code=400,
+            detail='User already registered',
+        )

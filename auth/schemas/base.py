@@ -1,10 +1,11 @@
 import json
 from enum import Enum
-from fastapi import HTTPException
 from typing import (
-    Dict, List, Union
+    Dict,
+    List,
+    Union,
 )
-from json import loads, JSONDecodeError
+from json import JSONDecodeError
 
 
 class SameOperationEnum(Enum):

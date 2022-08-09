@@ -1,10 +1,12 @@
 import json
 from schemas import (extractDB)
+from asyncpg.exceptions import RaiseError
 from tortoise import (
     Model,
     fields,
     transactions,
 )
+from messages import errors
 
 
 class User(Model):
@@ -21,10 +23,13 @@ class User(Model):
     @classmethod
     async def create_user(cls, provider: str, user_auth: dict) -> dict:
         async with transactions.in_transaction("default") as conn:
-            val = await conn.execute_query_dict(f'''
-                select * from create_user(provider_new := $1, user_auth_new := $2)
-            ''', (provider, json.dumps(user_auth),))
-            return extractDB(val)
+            try:
+                val = await conn.execute_query_dict(f'''
+                    SELECT * from create_user(provider_new := $1, user_auth_new := $2)
+                ''', (provider, json.dumps(user_auth),))
+                return extractDB(val)
+            except RaiseError:
+                raise errors.user_already
 
     @classmethod
     async def get_user(cls, provider: str, user_auth: dict) -> dict:

@@ -16,7 +16,11 @@ from fastapi import (
 from user_agents import parse
 
 from resources.utils import utils
-from schemas import SessionData, Device, GeoLocation
+from schemas import (
+    SessionData,
+    Device,
+    GeoLocation,
+)
 
 
 class ManagerSessionCookie:
@@ -81,7 +85,7 @@ class ManagerSessionCookie:
         )
         if not self.session:
             self.session = uuid4()
-        await utils.backend_memory.create(self.session, data)
+            await utils.backend_memory.create(self.session, data)
 
     async def add_to_cookie(self, response: Response):
         if not await self._check():

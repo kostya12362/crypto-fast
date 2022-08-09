@@ -7,7 +7,6 @@ from datetime import datetime
 
 from pydantic import (
     BaseModel,
-    validator
 )
 
 
@@ -29,17 +28,14 @@ class UserDetailSchema(SecurityControl):
     date_joined: Optional[datetime]
     is_verified: bool
     anti_phishing: bool
-    provider: str
+    provider: str = 'email'
 
 
 class UserAuthenticateSchema(BaseModel):
     user:  UserDetailSchema
-    # token: Optional[UUID] = None
-    # operation: Optional[OperationSecret] = None
 
 
-class OpenID(BaseModel):  # pylint: disable=no-member
-    """Class (schema) to represent information got from sso provider in a common form."""
+class OpenID(BaseModel):
     provider: Optional[str]
     id: Union[str, int] = None
     email: Optional[str] = None

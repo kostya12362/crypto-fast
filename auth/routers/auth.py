@@ -1,15 +1,12 @@
-from typing import Tuple, Union
-from fastapi import Request, Depends
+from typing import Union
+from fastapi import Depends, Response
 from fastapi_utils.inferring_router import InferringRouter
 from fastapi_utils.cbv import cbv
 from schemas import (
     UserCreate,
     FullSession,
-    SessionData,
     UserAuthenticateSchema,
-    UserDetailSchema,
     EmailAuth,
-    SameOperationEnum,
     FacebookSocialAuth,
     GoogleSocialAuth,
     TelegramSocialAuth,
@@ -28,13 +25,10 @@ class AuthAPIView:
         response = await auth.email_user_create(data=data, session=session)
         return response
 
-    @router.get(
-        path='/email-verify',
-        tags=["auth-email"]
-    )
+    @router.get(path='/email-verify', tags=["auth-email"])
     async def email_verify(self, token: str):
-        response = await auth.email_user_verify(token=token)
-        return response
+        user = await auth.email_user_verify(token=token)
+        return UserAuthenticateSchema(user=user)
 
     @router.post(
         path='/login/email',
@@ -83,16 +77,10 @@ class AuthAPIView:
         user = await auth.social_user_login_or_create(response_sso)
         return UserAuthenticateSchema(user=user)
 
-    @router.get(
-        path="/logout",
-        tags=['auth'],
-    )
-    async def logout(self, session: FullSession = Depends(utils.verifier_cookie)):
+    @router.get(path="/logout", tags=['auth'])
+    async def logout(self, response: Response, session: FullSession = Depends(utils.verifier_cookie)):
         await utils.backend_memory.delete(session_id=session.session_id)
-        return {"status": True}
+        response.delete_cookie('session')
+        response.body = {'status': True}
+        return response
 
-    @router.get(
-        path="/test",
-    )
-    async def test(self, session: FullSession = Depends(utils.verifier_cookie)):
-        return session

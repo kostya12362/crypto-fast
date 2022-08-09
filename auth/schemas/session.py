@@ -1,18 +1,16 @@
 from uuid import UUID
-
 from datetime import (
     datetime,
     timezone,
 )
 from typing import (
     Optional,
-    Dict,
     NamedTuple,
 )
 from pydantic import (
     BaseModel,
+    validator,
 )
-from schemas.security import ActiveTOTP
 from schemas.auth.auth_response import SecurityControl
 
 
@@ -29,17 +27,6 @@ class GeoLocation(BaseModel):
     long: Optional[float]
 
 
-# class SameOperationEnum(Enum):
-#     login = 1
-#     swap = 2
-#     bridge = 3
-#     change = 4
-#     security = 5
-#     settings = 6
-#     nft = 7
-#     send = 8
-
-
 class OperationDetail(BaseModel):
     active: bool = False
     timestamp: Optional[float] = datetime.now(tz=timezone.utc).timestamp()
@@ -53,7 +40,8 @@ class OperationCheck(BaseModel):
 
 
 class OperationSchema(BaseModel):
-    secret_operation: str
+    status: Optional[str] = 'info'
+    operation_key: str
     operation_id: int
     detail: OperationCheck
 
@@ -62,7 +50,6 @@ class SessionData(SecurityControl):
     device: Device
     location: GeoLocation
     ip_address: str
-    ge: str = None
     general_email: str = None
     phone: str = None
     user_id: Optional[int] = None
@@ -73,4 +60,3 @@ class SessionData(SecurityControl):
 class FullSession(NamedTuple):
     session_id: str
     data: SessionData
-

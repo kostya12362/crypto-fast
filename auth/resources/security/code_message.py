@@ -4,23 +4,38 @@ from typing import (
     Union
 )
 from fastapi import Request, HTTPException
+from fastapi.responses import RedirectResponse
+
 from models.security import Security
-from resources import utils
 from schemas import (
     FullSession,
     OperationDetail
 )
 from resources.render import render_template
+from resources.utils import utils
 
 
 class GenerateOTP:
 
-    def __init__(self, request: Request, session: FullSession, _type):
+    async def __call__(
+            self,
+            request: Request,
+            operation_id: str,
+            operation_key:  str,
+            code: int,
+            _type: str,
+            session: FullSession,
+    ):
         self._type = _type
-        self._code = request.query_params.get('code')
-        self._operation_id = request.query_params.get('operation_id')
-        self._operation_key = request.query_params.get('operation_key')
+        self._code = code
+        self._operation_id = str(operation_id)
+        self._operation_key = operation_key
         self._session = session
+        operation = await self.activate
+        if operation:
+            session.data.operations[self._operation_id][self._operation_key][_type] = operation
+        await utils.backend_memory.update(session_id=session.session_id, data=session.data)
+        return RedirectResponse(url=self.url_redirect(request=request))
 
     @classmethod
     def url_redirect(cls, request: Request):
@@ -31,18 +46,28 @@ class GenerateOTP:
     @property
     def get_operation(self) -> OperationDetail:
         try:
-            return OperationDetail(**self._session.data.operations[self._operation_id][self._operation_key][self._type])
+            if self._session.data.operations:
+                return OperationDetail(
+                    **self._session.data.operations[self._operation_id][self._operation_key][self._type]
+                )
         except KeyError:
             raise HTTPException(detail='Not valid operation_id or operation_key', status_code=400)
 
     @property
-    async def activate(self) -> Union[OperationDetail, None]:
+    async def get_totp(self):
         if self._type == 'otp':
-            secret = Security.get_otp_secret(self._session.data.user_id)
+            secret = await Security.get_otp_secret(user_id=self._session.data.user_id)
+            totp = pyotp.parse_uri(secret['otp_secret'])
         else:
             secret = self.get_operation.secret
-        if self._code and secret:
-            return self.check_code
+            totp = pyotp.TOTP(secret, interval=300)
+        return totp
+
+    @property
+    async def activate(self) -> Union[OperationDetail, None]:
+        totp = await self.get_totp
+        if self._code and totp:
+            return self.check_code(totp=totp)
         else:
             if not self.get_operation.active:
                 return await self.create_code
@@ -69,12 +94,14 @@ class GenerateOTP:
             await utils.custom_make_request('send-sms', data=body)
         return operation
 
-    @property
-    def check_code(self):
-        totp = pyotp.TOTP(self.get_operation.secret, interval=300)
+    def check_code(self, totp: pyotp.TOTP):
         if all((self._code, totp.now() == self._code)):
             operation = self.get_operation
-            operation.active = True
-            return operation
+            if operation:
+                operation.active = True
+                return operation
         else:
             raise HTTPException(detail='Not valid code', status_code=400)
+
+
+generateOTP = GenerateOTP()
